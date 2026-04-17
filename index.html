@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>売買管理アプリ</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #0f172a; font-family: 'Hiragino Sans', 'Noto Sans JP', sans-serif; color: #e2e8f0; min-height: 100vh; }
+    input, button, select { font-family: inherit; }
+    input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); }
+    ::-webkit-scrollbar { height: 4px; width: 4px; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 2px; }
+    .tab-btn { padding: 8px 14px; border-radius: 8px; border: none; cursor: pointer; font-size: 13px; font-weight: 600; transition: all 0.2s; }
+    .tab-btn.active { background: #3b82f6; color: #fff; }
+    .tab-btn:not(.active) { background: rgba(255,255,255,0.07); color: #94a3b8; }
+    .card { background: rgba(255,255,255,0.05); border-radius: 14px; padding: 20px; border: 1px solid rgba(255,255,255,0.08); }
+    .input-field { width: 100%; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; padding: 10px 12px; color: #e2e8f0; font-size: 14px; outline: none; }
+    .th { text-align: left; padding: 8px 10px; font-weight: 600; white-space: nowrap; color: #64748b; cursor: pointer; font-size: 13px; }
+    .td { padding: 10px; white-space: nowrap; border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 13px; }
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 16px; }
+    .modal-box { background: #1e293b; border-radius: 16px; padding: 28px; width: 100%; max-width: 460px; max-height: 90vh; overflow-y: auto; }
+    .badge-nisa { background: rgba(251,191,36,0.15); color: #fbbf24; border: 1px solid rgba(251,191,36,0.35); padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; white-space: nowrap; display: inline-block; }
+    .badge-tokutei { background: rgba(148,163,184,0.15); color: #94a3b8; border: 1px solid rgba(148,163,184,0.25); padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; white-space: nowrap; display: inline-block; }
+    .badge-buy { background: rgba(34,197,94,0.15); color: #22c55e; padding: 2px 10px; border-radius: 4px; font-size: 12px; font-weight: 700; white-space: nowrap; display: inline-block; }
+    .badge-sell { background: rgba(239,68,68,0.15); color: #ef4444; padding: 2px 10px; border-radius: 4px; font-size: 12px; font-weight: 700; white-space: nowrap; display: inline-block; }
+    .badge-period { background: rgba(99,102,241,0.15); color: #a5b4fc; border: 1px solid rgba(99,102,241,0.3); padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; white-space: nowrap; display: inline-block; }
+    .btn-primary { padding: 12px; border-radius: 10px; border: none; background: linear-gradient(135deg, #3b82f6, #2563eb); color: #fff; cursor: pointer; font-weight: 700; font-size: 14px; width: 100%; }
+    .btn-warning { padding: 12px; border-radius: 10px; border: none; background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; cursor: pointer; font-weight: 700; font-size: 14px; width: 100%; }
+    .btn-cancel { padding: 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); background: transparent; color: #94a3b8; cursor: pointer; font-weight: 600; width: 100%; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .span-2 { grid-column: 1 / -1; }
+    .filter-btn { flex: 1; padding: 8px 4px; border-radius: 8px; border: 1px solid; cursor: pointer; font-size: 12px; font-weight: 600; }
+    .holding-info { background: rgba(255,255,255,0.04); border-radius: 8px; padding: 10px 12px; }
+    .bar-chart { display: flex; align-items: flex-end; gap: 12px; height: 180px; padding: 0 8px; }
+    .bar-wrap { display: flex; flex-direction: column; align-items: center; flex: 1; height: 100%; justify-content: flex-end; gap: 4px; }
+    .bar { border-radius: 6px 6px 0 0; min-height: 4px; width: 100%; }
+    .bar-label { font-size: 10px; color: #94a3b8; text-align: center; }
+    .bar-value { font-size: 11px; font-weight: 700; text-align: center; }
+    .pie-legend { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 12px; }
+    .pie-legend-item { display: flex; align-items: center; gap: 4px; font-size: 12px; }
+  </style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+const COLORS = ["#22c55e","#ef4444","#3b82f6","#f59e0b","#8b5cf6","#ec4899","#14b8a6","#f97316"];
+
+let trades = [
+  {id:1,code:"7203",name:"トヨタ自動車", type:"buy", date:"2024-10-15",price:2800, qty:100,account:"nisa"},
+  {id:2,code:"7203",name:"トヨタ自動車", type:"sell",date:"2025-02-20",price:3050, qty:100,account:"nisa"},
+  {id:3,code:"6758",name:"ソニーグループ",type:"buy", date:"2025-01-10",price:13200,qty:50, account:"tokutei"},
+  {id:4,code:"9984",name:"ソフトバンクG",type:"buy", date:"2025-03-01",price:9400, qty:30, account:"tokutei"},
+];
+
+let state = {
+  view:"dashboard", showAddForm:false, editId:null,
+  sortKey:"date", sortAsc:false,
+  search:{keyword:"",dateFrom:"",dateTo:"",type:"all",account:"all"},
+  form:{code:"",name:"",type:"buy",date:"",price:"",qty:"",account:"nisa"},
+};
+
+function fmt(n){ return Number(n).toLocaleString(); }
+
+function holdLabel(days){
+  if(days>=365) return Math.floor(days/365)+"年"+Math.floor((days%365)/30)+"ヶ月";
+  if(days>=30)  return Math.floor(days/30)+"ヶ月"+(days%30)+"日";
+  return days+"日";
+}
+
+function calcHoldings(){
+  const map={};
+  trades.filter(t=>t.type==="buy").forEach(t=>{
+    if(!map[t.code]) map[t.code]={code:t.code,name:t.name,qty:0,totalCost:0,account:t.account};
+    map[t.code].qty+=t.qty; map[t.code].totalCost+=t.price*t.qty;
+  });
+  trades.filter(t=>t.type==="sell").forEach(t=>{
+    if(map[t.code]){
+      const avg=map[t.code].totalCost/map[t.code].qty;
+      map[t.code].qty-=t.qty; map[t.code].totalCost-=avg*t.qty;
+    }
+  });
+  return Object.values(map).filter(h=>h.qty>0).map(h=>({...h,avgPrice:Math.round(h.totalCost/h.qty)}));
+}
+
+function calcRealized(){
+  const bm={},res=[];
+  [...trades].sort((a,b)=>a.date.localeCompare(b.date)).forEach(t=>{
+    if(t.type==="buy"){
+      if(!bm[t.code]) bm[t.code]={qty:0,totalCost:0,account:t.account,buyDate:t.date};
+      bm[t.code].qty+=t.qty; bm[t.code].totalCost+=t.price*t.qty;
+    } else if(bm[t.code]&&bm[t.code].qty>0){
+      const avg=bm[t.code].totalCost/bm[t.code].qty;
+      const pnl=Math.round(t.price*t.qty-avg*t.qty);
+      const days=Math.round((new Date(t.date)-new Date(bm[t.code].buyDate))/86400000);
+      res.push({...t,pnl,account:bm[t.code].account,buyDate:bm[t.code].buyDate,holdDays:days});
+      bm[t.code].qty-=t.qty; bm[t.code].totalCost-=avg*t.qty;
+    }
+  });
+  return res;
+}
+
+function getFiltered(){
+  const s=state.search;
+  return [...trades].sort((a,b)=>{
+    let va=a[state.sortKey],vb=b[state.sortKey];
+    if(typeof va==="string") return state.sortAsc?va.localeCompare(vb):vb.localeCompare(va);
+    return state.sortAsc?va-vb:vb-va;
+  }).filter(t=>{
+    const kw=s.keyword.trim().toLowerCase();
+    if(kw&&!t.code.toLowerCase().includes(kw)&&!t.name.toLowerCase().includes(kw)) return false;
+    if(s.dateFrom&&t.date<s.dateFrom) return false;
+    if(s.dateTo&&t.date>s.dateTo) return false;
+    if(s.type!=="all"&&t.type!==s.type) return false;
+    if(s.account!=="all"&&t.account!==s.account) return false;
+    return true;
+  });
+}
+
+function aBadge(a){ return a==="nisa"?'<span class="badge-nisa">🌟 NISA</span>':'<span class="badge-tokutei">🏦 特定</span>'; }
+function tBadge(t){ return t==="buy"?'<span class="badge-buy">買い</span>':'<span class="badge-sell">売り</span>'; }
+function sIcon(k){ if(state.sortKey!==k) return '<span style="opacity:0.3">▼</span>'; return state.sortAsc?"▲":"▼"; }
+
+function render(){
+  const h=calcHoldings(), r=calcRealized();
+  const tPnL=r.reduce((s,x)=>s+x.pnl,0);
+  const tInv=h.reduce((s,x)=>s+x.totalCost,0);
+  const filt=getFiltered();
+  const v=state.view;
+
+  let html=`
+  <div style="background:rgba(255,255,255,0.04);border-bottom:1px solid rgba(255,255,255,0.08);padding:16px 20px;display:flex;flex-wrap:wrap;align-items:center;gap:12px">
+    <div style="flex:1"><div style="font-size:20px;font-weight:700;color:#f1f5f9">📈 売買管理アプリ</div><div style="font-size:12px;color:#94a3b8;margin-top:2px">国内株 売買管理アプリ</div></div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      ${[["dashboard","ダッシュボード"],["trades","売買履歴"],["holdings","保有株"],["chart","グラフ"]].map(([id,lb])=>`<button class="tab-btn ${v===id?"active":""}" onclick="sv('${id}')">${lb}</button>`).join("")}
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button onclick="oaf()" style="padding:10px 18px;border-radius:10px;border:none;cursor:pointer;background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;font-weight:700;font-size:14px">＋ 取引を追加</button>
+      <button onclick="sv('trades')" style="padding:10px 18px;border-radius:10px;border:1px solid rgba(251,191,36,0.4);cursor:pointer;background:rgba(251,191,36,0.1);color:#fbbf24;font-weight:700;font-size:14px">✏️ 取引を修正</button>
+      <button onclick="sv('trades')" style="padding:10px 18px;border-radius:10px;border:1px solid rgba(239,68,68,0.4);cursor:pointer;background:rgba(239,68,68,0.1);color:#ef4444;font-weight:700;font-size:14px">🗑️ 取引を削除</button>
+    </div>
+  </div>
+  <div style="max-width:1100px;margin:0 auto;padding:24px 16px">`;
+
+  // ダッシュボード
+  if(v==="dashboard"){
+    const pc=tPnL>=0?"#22c55e":"#ef4444";
+    const rec=[...trades].reverse().slice(0,5);
+    html+=`
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-bottom:24px">
+      <div class="card"><div style="font-size:12px;color:#94a3b8;margin-bottom:8px">実現損益（合計）</div><div style="font-size:24px;font-weight:700;color:${pc}">${tPnL>=0?"+":""}${fmt(tPnL)}円</div></div>
+      <div class="card"><div style="font-size:12px;color:#94a3b8;margin-bottom:8px">投資中の総額</div><div style="font-size:24px;font-weight:700;color:#60a5fa">${fmt(Math.round(tInv))}円</div></div>
+      <div class="card"><div style="font-size:12px;color:#94a3b8;margin-bottom:8px">保有銘柄数</div><div style="font-size:24px;font-weight:700;color:#f59e0b">${h.length}銘柄</div></div>
+      <div class="card"><div style="font-size:12px;color:#94a3b8;margin-bottom:8px">取引回数（合計）</div><div style="font-size:24px;font-weight:700;color:#8b5cf6">${trades.length}回</div></div>
+    </div>
+    <div class="card"><div style="font-weight:700;margin-bottom:16px;color:#f1f5f9">📋 直近の取引</div>
+      <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:500px">
+        <thead><tr style="border-bottom:1px solid rgba(255,255,255,0.08)"><th class="th">日付</th><th class="th">銘柄コード</th><th class="th">銘柄名</th><th class="th">売買</th><th class="th">株数</th><th class="th">単価</th><th class="th">口座</th></tr></thead>
+        <tbody>${rec.map(t=>`<tr><td class="td" style="color:#94a3b8">${t.date}</td><td class="td" style="color:#60a5fa;font-weight:700">${t.code}</td><td class="td">${t.name}</td><td class="td">${tBadge(t.type)}</td><td class="td">${fmt(t.qty)}株</td><td class="td">${fmt(t.price)}円</td><td class="td">${aBadge(t.account)}</td></tr>`).join("")}</tbody>
+      </table></div>
+    </div>`;
+  }
+
+  // 売買履歴
+  if(v==="trades"){
+    const s=state.search;
+    function fb(key,val,label,ac){
+      const on=s[key]===val;
+      const rgb=ac==="#60a5fa"?"96,165,250":"251,191,36";
+      return `<button class="filter-btn" onclick="ss('${key}','${val}')" style="border-color:${on?ac:"rgba(255,255,255,0.1)"};background:${on?"rgba("+rgb+",0.15)":"transparent"};color:${on?ac:"#64748b"}">${label}</button>`;
+    }
+    html+=`
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <div class="card">
+        <div style="font-weight:700;color:#f1f5f9;margin-bottom:12px;font-size:14px">🔍 検索・絞り込み</div>
+        <div class="grid-2" style="gap:10px">
+          <div class="span-2"><label style="font-size:11px;color:#64748b;display:block;margin-bottom:4px">銘柄コード・銘柄名で検索</label>
+            <input class="input-field" type="text" placeholder="例：7203 または トヨタ" value="${s.keyword}" oninput="ss('keyword',this.value)"/></div>
+          <div><label style="font-size:11px;color:#64748b;display:block;margin-bottom:4px">取引日（開始）</label>
+            <input class="input-field" type="date" value="${s.dateFrom}" onchange="ss('dateFrom',this.value)" style="font-size:13px"/></div>
+          <div><label style="font-size:11px;color:#64748b;display:block;margin-bottom:4px">取引日（終了）</label>
+            <input class="input-field" type="date" value="${s.dateTo}" onchange="ss('dateTo',this.value)" style="font-size:13px"/></div>
+          <div><label style="font-size:11px;color:#64748b;display:block;margin-bottom:4px">売買</label>
+            <div style="display:flex;gap:6px">${fb("type","all","すべて","#60a5fa")}${fb("type","buy","買い","#60a5fa")}${fb("type","sell","売り","#60a5fa")}</div></div>
+          <div><label style="font-size:11px;color:#64748b;display:block;margin-bottom:4px">口座</label>
+            <div style="display:flex;gap:6px">${fb("account","all","すべて","#fbbf24")}${fb("account","nisa","NISA","#fbbf24")}${fb("account","tokutei","特定","#fbbf24")}</div></div>
+          <div class="span-2" style="text-align:right">
+            <button onclick="rs()" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:6px 16px;color:#94a3b8;cursor:pointer;font-size:12px;font-weight:600">🔄 検索をリセット</button>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div style="font-weight:700;margin-bottom:16px;color:#f1f5f9">📋 売買履歴 <span style="font-size:13px;font-weight:400;color:#64748b">${filt.length}件 / 全${trades.length}件</span></div>
+        <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:600px">
+          <thead><tr style="border-bottom:1px solid rgba(255,255,255,0.1)">
+            <th class="th" onclick="ts('date')">日付 ${sIcon("date")}</th>
+            <th class="th" onclick="ts('code')">銘柄コード ${sIcon("code")}</th>
+            <th class="th" onclick="ts('name')">銘柄名 ${sIcon("name")}</th>
+            <th class="th" onclick="ts('type')">売買 ${sIcon("type")}</th>
+            <th class="th" onclick="ts('qty')">株数 ${sIcon("qty")}</th>
+            <th class="th" onclick="ts('price')">単価 ${sIcon("price")}</th>
+            <th class="th">口座</th>
+            <th class="th" style="cursor:default">操作</th>
+          </tr></thead>
+          <tbody>${filt.length===0?`<tr><td colspan="8" style="padding:32px;text-align:center;color:#64748b">該当する取引が見つかりません</td></tr>`:
+            filt.map(t=>`<tr>
+              <td class="td" style="color:#94a3b8">${t.date}</td>
+              <td class="td" style="color:#60a5fa;font-weight:700">${t.code}</td>
+              <td class="td">${t.name}</td>
+              <td class="td">${tBadge(t.type)}</td>
+              <td class="td">${fmt(t.qty)}</td>
+              <td class="td">${fmt(t.price)}円</td>
+              <td class="td">${aBadge(t.account)}</td>
+              <td class="td"><div style="display:flex;gap:6px">
+                <button onclick="oe(${t.id})" style="background:rgba(251,191,36,0.15);color:#fbbf24;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px;font-weight:600">修正</button>
+                <button onclick="dt(${t.id})" style="background:rgba(239,68,68,0.15);color:#ef4444;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px;font-weight:600">削除</button>
+              </div></td>
+            </tr>`).join("")}
+          </tbody>
+        </table></div>
+      </div>
+    </div>`;
+  }
+
+  // 保有株
+  if(v==="holdings"){
+    html+=`<div><div style="font-weight:700;margin-bottom:16px;color:#f1f5f9">📦 保有株一覧</div>`;
+    if(h.length===0){
+      html+=`<div class="card" style="text-align:center;color:#64748b">現在保有している株はありません</div>`;
+    } else {
+      html+=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px">
+        ${h.map((x,i)=>`<div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+            <div><div style="color:#60a5fa;font-weight:700;font-size:15px">${x.code}</div><div style="font-size:14px;font-weight:600;margin-top:2px">${x.name}</div></div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+              <div style="width:10px;height:10px;border-radius:50%;background:${COLORS[i%COLORS.length]}"></div>${aBadge(x.account)}
+            </div>
+          </div>
+          <div class="grid-2" style="gap:10px;font-size:13px">
+            <div class="holding-info"><div style="color:#64748b;font-size:11px;margin-bottom:4px">保有株数</div><div style="font-weight:700">${fmt(x.qty)}株</div></div>
+            <div class="holding-info"><div style="color:#64748b;font-size:11px;margin-bottom:4px">平均取得単価</div><div style="font-weight:700">${fmt(x.avgPrice)}円</div></div>
+            <div class="holding-info span-2"><div style="color:#64748b;font-size:11px;margin-bottom:4px">投資総額</div><div style="font-weight:700;color:#f59e0b">${fmt(Math.round(x.totalCost))}円</div></div>
+          </div>
+        </div>`).join("")}
+      </div>`;
+    }
+    if(r.length>0){
+      const pc=tPnL>=0?"#22c55e":"#ef4444";
+      html+=`<div class="card" style="margin-top:24px">
+        <div style="font-weight:700;color:#f1f5f9;margin-bottom:16px">✅ 実現損益（売却済み）</div>
+        <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:560px">
+          <thead><tr style="border-bottom:1px solid rgba(255,255,255,0.08)">
+            <th class="th">日付</th><th class="th">銘柄コード</th><th class="th">銘柄名</th><th class="th">口座</th><th class="th">保有期間</th><th class="th">株数</th><th class="th">売却単価</th><th class="th">損益</th>
+          </tr></thead>
+          <tbody>
+            ${r.map(x=>`<tr>
+              <td class="td" style="color:#94a3b8">${x.date}</td>
+              <td class="td" style="color:#60a5fa;font-weight:700">${x.code}</td>
+              <td class="td">${x.name}</td>
+              <td class="td">${aBadge(x.account)}</td>
+              <td class="td"><span class="badge-period">⏱ ${holdLabel(x.holdDays)}</span></td>
+              <td class="td">${fmt(x.qty)}株</td>
+              <td class="td">${fmt(x.price)}円</td>
+              <td class="td" style="font-weight:700;color:${x.pnl>=0?"#22c55e":"#ef4444"}">${x.pnl>=0?"+":""}${fmt(x.pnl)}円</td>
+            </tr>`).join("")}
+            <tr style="border-top:2px solid rgba(255,255,255,0.15)">
+              <td colspan="7" style="padding:10px;font-weight:700;text-align:right">合計</td>
+              <td style="padding:10px;font-weight:700;font-size:16px;color:${pc}">${tPnL>=0?"+":""}${fmt(tPnL)}円</td>
+            </tr>
+          </tbody>
+        </table></div>
+      </div>`;
+    }
+    html+=`</div>`;
+  }
+
+  // グラフ
+  if(v==="chart"){
+    const pmap={};
+    r.forEach(x=>{ pmap[x.name]=(pmap[x.name]||0)+x.pnl; });
+    const pd=Object.entries(pmap).map(([name,pnl])=>({name,pnl}));
+    const maxA=pd.length?Math.max(...pd.map(d=>Math.abs(d.pnl)),1):1;
+
+    const barH=pd.length===0?`<div style="color:#64748b;text-align:center;padding:40px">売却データがありません</div>`:
+      `<div class="bar-chart">${pd.map(d=>{
+        const pct=Math.round(Math.abs(d.pnl)/maxA*160);
+        const c=d.pnl>=0?"#22c55e":"#ef4444";
+        return `<div class="bar-wrap">
+          <div class="bar-value" style="color:${c}">${d.pnl>=0?"+":""}${fmt(d.pnl)}</div>
+          <div class="bar" style="height:${pct}px;background:${c}"></div>
+          <div class="bar-label">${d.name}</div>
+        </div>`;
+      }).join("")}</div>`;
+
+    const total=h.reduce((s,x)=>s+x.totalCost,0);
+    let pieH=`<div style="color:#64748b;text-align:center;padding:40px">保有株がありません</div>`;
+    if(h.length>0&&total>0){
+      let sa=-Math.PI/2;
+      const R=80,cx=100,cy=100;
+      const slices=h.map((x,i)=>{
+        const ratio=x.totalCost/total, ang=ratio*2*Math.PI;
+        const x1=cx+R*Math.cos(sa), y1=cy+R*Math.sin(sa);
+        sa+=ang;
+        const x2=cx+R*Math.cos(sa), y2=cy+R*Math.sin(sa);
+        return `<path d="M${cx},${cy} L${x1.toFixed(1)},${y1.toFixed(1)} A${R},${R} 0 ${ang>Math.PI?1:0},1 ${x2.toFixed(1)},${y2.toFixed(1)} Z" fill="${COLORS[i%COLORS.length]}" stroke="#1e293b" stroke-width="2"/>`;
+      }).join("");
+      const legend=h.map((x,i)=>`<div class="pie-legend-item"><div style="width:10px;height:10px;border-radius:50%;background:${COLORS[i%COLORS.length]};flex-shrink:0"></div><span>${x.name}</span><span style="color:#64748b"> ${Math.round(x.totalCost/total*100)}%</span></div>`).join("");
+      pieH=`<div style="display:flex;flex-direction:column;align-items:center">
+        <svg width="200" height="200" viewBox="0 0 200 200">${slices}</svg>
+        <div class="pie-legend">${legend}</div>
+      </div>`;
+    }
+
+    html+=`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:20px">
+      <div class="card"><div style="font-weight:700;margin-bottom:16px;color:#f1f5f9">📊 銘柄別 実現損益</div>${barH}</div>
+      <div class="card"><div style="font-weight:700;margin-bottom:16px;color:#f1f5f9">🥧 保有株の比率（投資額ベース）</div>${pieH}</div>
+    </div>`;
+  }
+
+  html+=`</div>`;
+
+  // モーダル
+  if(state.showAddForm||state.editId){
+    const isEdit=!!state.editId;
+    const f=state.form;
+    const amt=f.price&&f.qty?fmt(Number(f.price)*Number(f.qty)):null;
+    html+=`<div class="modal-overlay">
+      <div class="modal-box" style="border:1px solid ${isEdit?"rgba(251,191,36,0.2)":"rgba(255,255,255,0.1)"}">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
+          <div style="font-weight:700;font-size:18px;color:${isEdit?"#fbbf24":"#f1f5f9"}">${isEdit?"✏️ 取引を修正":"＋ 取引を追加"}</div>
+          <button onclick="${isEdit?"ce()":"caf()"}" style="background:transparent;border:none;cursor:pointer;color:#64748b;font-size:20px">✕</button>
+        </div>
+        <div class="grid-2" style="gap:14px">
+          <div><label style="font-size:12px;color:#94a3b8;display:block;margin-bottom:4px">銘柄コード（例：7203）</label>
+            <input class="input-field" type="text" value="${f.code}" oninput="uf('code',this.value)"/></div>
+          <div style="grid-column:1/-1"><label style="font-size:12px;color:#94a3b8;display:block;margin-bottom:4px">銘柄名（例：トヨタ自動車）</label>
+            <input class="input-field" type="text" value="${f.name}" oninput="uf('name',this.value)"/></div>
+          <div style="grid-column:1/-1"><label style="font-size:12px;color:#94a3b8;display:block;margin-bottom:4px">取引日</label>
+            <input class="input-field" type="date" value="${f.date}" onchange="uf('date',this.value)"/></div>
+          <div style="grid-column:1/-1"><div style="display:flex;gap:8px">
+            ${["buy","sell"].map(vv=>`<button onclick="uf('type','${vv}')" style="flex:1;padding:10px;border-radius:8px;border:2px solid;cursor:pointer;font-weight:700;font-size:14px;border-color:${f.type===vv?(vv==="buy"?"#22c55e":"#ef4444"):"rgba(255,255,255,0.1)"};background:${f.type===vv?(vv==="buy"?"rgba(34,197,94,0.15)":"rgba(239,68,68,0.15)"):"transparent"};color:${f.type===vv?(vv==="buy"?"#22c55e":"#ef4444"):"#64748b"}">${vv==="buy"?"買い":"売り"}</button>`).join("")}
+          </div></div>
+          <div><label style="font-size:12px;color:#94a3b8;display:block;margin-bottom:4px">単価（円）</label>
+            <input class="input-field" type="number" value="${f.price}" oninput="uf('price',this.value)"/></div>
+          <div><label style="font-size:12px;color:#94a3b8;display:block;margin-bottom:4px">株数</label>
+            <input class="input-field" type="number" value="${f.qty}" oninput="uf('qty',this.value)"/></div>
+          <div style="grid-column:1/-1">
+            <label style="font-size:12px;color:#94a3b8;display:block;margin-bottom:6px">口座の種類</label>
+            <div style="display:flex;gap:8px">
+              ${[["nisa","🌟 NISA口座","非課税・長期保有向け"],["tokutei","🏦 特定口座","源泉徴収あり"]].map(([vv,lb,ds])=>`
+              <button onclick="uf('account','${vv}')" style="flex:1;padding:12px 8px;border-radius:10px;border:2px solid;cursor:pointer;text-align:left;border-color:${f.account===vv?(vv==="nisa"?"#fbbf24":"#94a3b8"):"rgba(255,255,255,0.1)"};background:${f.account===vv?(vv==="nisa"?"rgba(251,191,36,0.12)":"rgba(148,163,184,0.12)"):"transparent"}">
+                <div style="font-weight:700;font-size:13px;color:${f.account===vv?(vv==="nisa"?"#fbbf24":"#e2e8f0"):"#64748b"}">${lb}</div>
+                <div style="font-size:11px;margin-top:3px;color:#64748b">${ds}</div>
+              </button>`).join("")}
+            </div>
+          </div>
+        </div>
+        ${amt?`<div style="margin-top:16px;background:rgba(59,130,246,0.1);border-radius:10px;padding:12px 16px;border:1px solid rgba(59,130,246,0.2);font-size:13px"><div style="color:#94a3b8">取引金額</div><div style="font-weight:700;color:#60a5fa;font-size:16px;margin-top:4px">${amt}円</div></div>`:""}
+        <div class="grid-2" style="margin-top:20px">
+          <button class="btn-cancel" onclick="${isEdit?"ce()":"caf()"}">キャンセル</button>
+          <button class="${isEdit?"btn-warning":"btn-primary"}" onclick="${isEdit?"se()":"sa()"}"> ${isEdit?"修正を保存":"追加する"}</button>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  document.getElementById("app").innerHTML=html;
+}
+
+// ===== 操作関数 =====
+function sv(v){ state.view=v; render(); }
+function oaf(){ state.showAddForm=true; state.form={code:"",name:"",type:"buy",date:"",price:"",qty:"",account:"nisa"}; render(); }
+function caf(){ state.showAddForm=false; render(); }
+function oe(id){ const t=trades.find(x=>x.id===id); if(!t) return; state.editId=id; state.form={code:t.code,name:t.name,type:t.type,date:t.date,price:String(t.price),qty:String(t.qty),account:t.account}; render(); }
+function ce(){ state.editId=null; render(); }
+function uf(k,v){ state.form[k]=v; render(); }
+function sa(){ const f=state.form; if(!f.code||!f.name||!f.date||!f.price||!f.qty) return; trades.push({id:Date.now(),...f,price:Number(f.price),qty:Number(f.qty)}); state.showAddForm=false; render(); }
+function se(){ const f=state.form; if(!f.code||!f.name||!f.date||!f.price||!f.qty) return; trades=trades.map(t=>t.id===state.editId?{...t,...f,price:Number(f.price),qty:Number(f.qty)}:t); state.editId=null; render(); }
+function dt(id){ if(confirm("この取引を削除しますか？")) { trades=trades.filter(t=>t.id!==id); render(); } }
+function ts(k){ if(state.sortKey===k) state.sortAsc=!state.sortAsc; else{state.sortKey=k;state.sortAsc=true;} render(); }
+function ss(k,v){ state.search[k]=v; render(); }
+function rs(){ state.search={keyword:"",dateFrom:"",dateTo:"",type:"all",account:"all"}; render(); }
+
+render();
+</script>
+</body>
+</html>
