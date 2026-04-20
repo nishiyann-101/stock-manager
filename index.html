@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="売買管理">
+<meta name="format-detection" content="telephone=no">
+<title>売買管理アプリ</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html{height:100%;-webkit-text-size-adjust:100%}
+body{min-height:100%;background:#0f172a;font-family:'Hiragino Sans',sans-serif;color:#e2e8f0;font-size:14px;padding-bottom:88px}
+input,button,select{font-family:inherit}
+button{touch-action:manipulation}
+input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1)}
+.hidden{display:none!important}
+.tscroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{width:100%;border-collapse:collapse;min-width:520px}
+th{text-align:left;padding:7px 8px;font-size:12px;color:#64748b;font-weight:600;white-space:nowrap;border-bottom:1px solid rgba(255,255,255,0.08)}
+td{padding:8px;font-size:12px;white-space:nowrap;border-bottom:1px solid rgba(255,255,255,0.04)}
+.bn{background:rgba(251,191,36,0.15);color:#fbbf24;border:1px solid rgba(251,191,36,0.35);padding:2px 6px;border-radius:5px;font-size:10px;font-weight:700}
+.bt{background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid rgba(148,163,184,0.25);padding:2px 6px;border-radius:5px;font-size:10px;font-weight:700}
+.bb{background:rgba(34,197,94,0.15);color:#22c55e;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700}
+.bs{background:rgba(239,68,68,0.15);color:#ef4444;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700}
+.bp{background:rgba(99,102,241,0.15);color:#a5b4fc;border:1px solid rgba(99,102,241,0.3);padding:2px 6px;border-radius:5px;font-size:10px;font-weight:700}
+.ifield{width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:11px 12px;color:#e2e8f0;outline:none;font-size:16px}
+.card{background:rgba(255,255,255,0.05);border-radius:14px;padding:14px;border:1px solid rgba(255,255,255,0.08);margin-bottom:12px}
+.tbtn{padding:12px;border-radius:10px;border:2px solid rgba(255,255,255,0.1);cursor:pointer;background:transparent;color:#64748b;font-weight:700;font-size:14px;width:49%}
+.tbtn-on-buy{border-color:#22c55e;background:rgba(34,197,94,0.15);color:#22c55e}
+.tbtn-on-sell{border-color:#ef4444;background:rgba(239,68,68,0.15);color:#ef4444}
+.abtn{padding:12px 8px;border-radius:10px;border:2px solid rgba(255,255,255,0.1);cursor:pointer;background:transparent;text-align:left;width:49%}
+.abtn-nisa{border-color:#fbbf24;background:rgba(251,191,36,0.12)}
+.abtn-toku{border-color:#94a3b8;background:rgba(148,163,184,0.12)}
+.fbtn{padding:9px 4px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);cursor:pointer;font-size:12px;font-weight:600;background:transparent;color:#64748b;width:32%}
+.fbtn-blue{border-color:#60a5fa;background:rgba(96,165,250,0.15);color:#60a5fa}
+.fbtn-gold{border-color:#fbbf24;background:rgba(251,191,36,0.15);color:#fbbf24}
+.btn-edit{background:rgba(251,191,36,0.15);color:#fbbf24;border:none;border-radius:6px;padding:6px 10px;cursor:pointer;font-size:11px;font-weight:600}
+.btn-del{background:rgba(239,68,68,0.15);color:#ef4444;border:none;border-radius:6px;padding:6px 10px;cursor:pointer;font-size:11px;font-weight:600}
+/* トップバー */
+.topbar{background:rgba(15,23,42,0.96);border-bottom:1px solid rgba(255,255,255,0.08);padding:12px 14px}
+/* フローティング追加ボタン */
+.fab{position:fixed;right:16px;bottom:92px;width:58px;height:58px;border-radius:50%;border:none;background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;font-size:30px;font-weight:700;box-shadow:0 10px 24px rgba(37,99,235,0.35);z-index:210;cursor:pointer}
+/* 下部ナビゲーション */
+.bottomnav{position:fixed;left:0;right:0;bottom:0;z-index:200;background:rgba(15,23,42,0.98);border-top:1px solid rgba(255,255,255,0.08);padding:8px 10px}
+.bottomnav-inner{max-width:700px;margin:0 auto;display:table;width:100%}
+.bnav-btn{display:table-cell;padding:10px 4px;border:none;border-radius:10px;background:rgba(255,255,255,0.06);color:#94a3b8;font-size:11px;font-weight:700;cursor:pointer;text-align:center;width:20%}
+.bnav-btn.on{background:#3b82f6;color:#fff}
+/* モーダル */
+#savebadge{position:fixed;bottom:100px;right:16px;background:rgba(34,197,94,0.95);color:#fff;padding:8px 13px;border-radius:16px;font-size:12px;font-weight:700;z-index:220;opacity:0;pointer-events:none}
+#toastmsg{position:fixed;left:10%;bottom:100px;width:80%;text-align:center;background:rgba(30,41,59,0.97);color:#e2e8f0;padding:10px 16px;border-radius:20px;font-size:12px;font-weight:700;z-index:230;opacity:0;pointer-events:none;border:1px solid rgba(255,255,255,0.12)}
+#modal-bg{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.75);z-index:300;padding:16px;overflow-y:auto}
+#modal-box{background:#1e293b;border-radius:16px;padding:20px;width:100%;max-width:480px;margin:20px auto 100px auto;border:1px solid rgba(255,255,255,0.08)}
+.flabel{font-size:11px;color:#94a3b8;margin-bottom:4px;display:block}
+@media (min-width:768px){
+  body{padding-bottom:40px}
+  .bottomnav{display:none}
+  .fab{bottom:22px}
+  #savebadge{bottom:20px}
+  #toastmsg{bottom:24px}
+}
+</style>
+</head>
+<body>
+
+<!-- トップバー -->
+<div class="topbar">
+  <div style="margin-bottom:10px">
+    <span style="font-size:18px;font-weight:700;color:#f1f5f9">📈 売買管理アプリ</span>
+    <span id="cloudStatus" style="float:right;padding:4px 10px;border-radius:999px;border:1px solid rgba(59,130,246,0.3);background:rgba(59,130,246,0.08);color:#93c5fd;font-size:11px;font-weight:700">保存中</span>
+  </div>
+  <div style="overflow-x:auto;white-space:nowrap;padding-bottom:2px">
+    <button id="tab-dashboard" onclick="showTab('dashboard')" style="padding:8px 13px;border-radius:9px;border:none;cursor:pointer;font-size:12px;font-weight:600;background:#3b82f6;color:#fff;margin-right:5px">ダッシュボード</button>
+    <button id="tab-trades" onclick="showTab('trades')" style="padding:8px 13px;border-radius:9px;border:none;cursor:pointer;font-size:12px;font-weight:600;background:rgba(255,255,255,0.07);color:#94a3b8;margin-right:5px">売買履歴</button>
+    <button id="tab-holdings" onclick="showTab('holdings')" style="padding:8px 13px;border-radius:9px;border:none;cursor:pointer;font-size:12px;font-weight:600;background:rgba(255,255,255,0.07);color:#94a3b8;margin-right:5px">保有株</button>
+    <button id="tab-chart" onclick="showTab('chart')" style="padding:8px 13px;border-radius:9px;border:none;cursor:pointer;font-size:12px;font-weight:600;background:rgba(255,255,255,0.07);color:#94a3b8">グラフ</button>
+  </div>
+</div>
+
+<div style="max-width:1100px;margin:0 auto;padding:14px 12px 26px">
+
+<!-- ダッシュボード -->
+<div id="page-dashboard">
+  <div style="margin-bottom:14px">
+    <div style="margin-bottom:6px">
+      <button onclick="openAdd()" style="width:49%;margin-right:2%;padding:12px 4px;border-radius:10px;border:none;cursor:pointer;background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;font-weight:700;font-size:13px">＋ 取引を追加</button>
+      <button onclick="showTab('trades')" style="width:49%;padding:12px 4px;border-radius:10px;border:1px solid rgba(251,191,36,0.4);cursor:pointer;background:rgba(251,191,36,0.1);color:#fbbf24;font-weight:700;font-size:13px">✏️ 修正・削除</button>
+    </div>
+    <div style="margin-bottom:6px">
+      <button onclick="doCSV()" style="width:49%;margin-right:2%;padding:12px 4px;border-radius:10px;border:1px solid rgba(34,197,94,0.4);cursor:pointer;background:rgba(34,197,94,0.1);color:#22c55e;font-weight:700;font-size:13px">📥 CSV保存</button>
+      <button onclick="saveToGoogle()" style="width:49%;padding:12px 4px;border-radius:10px;border:1px solid rgba(139,92,246,0.4);cursor:pointer;background:rgba(139,92,246,0.1);color:#a78bfa;font-weight:700;font-size:13px">☁ Google保存</button>
+    </div>
+    <div>
+      <button onclick="loadFromGoogle()" style="width:49%;padding:12px 4px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);cursor:pointer;background:rgba(255,255,255,0.06);color:#94a3b8;font-weight:600;font-size:13px">☁ Google読込</button>
+    </div>
+  </div>
+
+  <div style="margin-bottom:12px">
+    <div style="margin-bottom:8px">
+      <div id="sum0" style="width:49%;margin-right:2%;display:inline-block;vertical-align:top;background:rgba(255,255,255,0.05);border-radius:14px;padding:14px;border:1px solid rgba(255,255,255,0.08)"></div>
+      <div id="sum1" style="width:49%;display:inline-block;vertical-align:top;background:rgba(255,255,255,0.05);border-radius:14px;padding:14px;border:1px solid rgba(255,255,255,0.08)"></div>
+    </div>
+    <div>
+      <div id="sum2" style="width:49%;margin-right:2%;display:inline-block;vertical-align:top;background:rgba(255,255,255,0.05);border-radius:14px;padding:14px;border:1px solid rgba(255,255,255,0.08)"></div>
+      <div id="sum3" style="width:49%;display:inline-block;vertical-align:top;background:rgba(255,255,255,0.05);border-radius:14px;padding:14px;border:1px solid rgba(255,255,255,0.08)"></div>
+    </div>
+  </div>
+
+  <div style="background:rgba(34,197,94,0.04);border:1px solid rgba(34,197,94,0.2);border-radius:12px;padding:12px 14px;margin-bottom:12px">
+    <div style="font-weight:700;color:#22c55e;font-size:13px">💾 3重バックアップ対応</div>
+    <div style="font-size:11px;color:#64748b;margin-top:2px">自動保存 + CSV + Google Sheets</div>
+  </div>
+
+  <div class="card">
+    <div style="font-weight:700;color:#f1f5f9;margin-bottom:12px;font-size:14px">📋 直近の取引</div>
+    <div class="tscroll"><table id="recent-table"></table></div>
+  </div>
+</div>
+
+<!-- 売買履歴 -->
+<div id="page-trades" class="hidden">
+  <div class="card">
+    <div style="font-weight:700;color:#f1f5f9;margin-bottom:10px;font-size:13px">🔍 検索・絞り込み</div>
+    <div style="margin-bottom:8px">
+      <span class="flabel">銘柄コード・銘柄名で検索</span>
+      <input class="ifield" type="text" id="kw" placeholder="例：7203 または トヨタ" oninput="renderTrades()">
+    </div>
+    <div style="margin-bottom:8px">
+      <div style="width:49%;margin-right:2%;display:inline-block;vertical-align:top">
+        <span class="flabel">取引日（開始）</span>
+        <input class="ifield" type="date" id="df" onchange="renderTrades()">
+      </div>
+      <div style="width:49%;display:inline-block;vertical-align:top">
+        <span class="flabel">取引日（終了）</span>
+        <input class="ifield" type="date" id="dt" onchange="renderTrades()">
+      </div>
+    </div>
+    <div style="margin-bottom:8px">
+      <span class="flabel">売買</span>
+      <div>
+        <button class="fbtn fbtn-blue" id="ft-all" onclick="setFType('all')" style="margin-right:2%">すべて</button>
+        <button class="fbtn" id="ft-buy" onclick="setFType('buy')" style="margin-right:2%">買い</button>
+        <button class="fbtn" id="ft-sell" onclick="setFType('sell')">売り</button>
+      </div>
+    </div>
+    <div style="margin-bottom:10px">
+      <span class="flabel">口座</span>
+      <div>
+        <button class="fbtn fbtn-gold" id="fa-all" onclick="setFAcc('all')" style="margin-right:2%">すべて</button>
+        <button class="fbtn" id="fa-nisa" onclick="setFAcc('nisa')" style="margin-right:2%">NISA</button>
+        <button class="fbtn" id="fa-toku" onclick="setFAcc('tokutei')">特定</button>
+      </div>
+    </div>
+    <div>
+      <button onclick="resetFilter()" style="padding:9px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);cursor:pointer;background:rgba(255,255,255,0.06);color:#94a3b8;font-size:12px;font-weight:600;margin-right:8px">🔄 リセット</button>
+      <button onclick="doCSV()" style="padding:9px 14px;border-radius:8px;border:1px solid rgba(34,197,94,0.4);cursor:pointer;background:rgba(34,197,94,0.1);color:#22c55e;font-size:12px;font-weight:600">📥 CSV保存</button>
+    </div>
+  </div>
+  <div class="card">
+    <div style="font-weight:700;color:#f1f5f9;margin-bottom:12px;font-size:13px">📋 売買履歴 <span id="fcnt" style="font-size:12px;font-weight:400;color:#64748b"></span></div>
+    <div class="tscroll"><table id="trades-table"></table></div>
+  </div>
+</div>
+
+<!-- 保有株 -->
+<div id="page-holdings" class="hidden">
+  <div style="font-weight:700;color:#f1f5f9;margin-bottom:12px;font-size:14px">📦 保有株一覧</div>
+  <div id="hold-grid"></div>
+  <div id="realized-wrap"></div>
+</div>
+
+<!-- グラフ -->
+<div id="page-chart" class="hidden">
+  <div class="card">
+    <div style="font-weight:700;color:#f1f5f9;margin-bottom:12px">📊 銘柄別 実現損益</div>
+    <div id="bar-area"></div>
+  </div>
+  <div class="card">
+    <div style="font-weight:700;color:#f1f5f9;margin-bottom:12px">🥧 保有株の比率（投資額ベース）</div>
+    <div id="pie-area"></div>
+  </div>
+</div>
+
+<!-- 設定 -->
+<div id="page-settings" class="hidden">
+  <div style="background:rgba(139,92,246,0.06);border:1px solid rgba(139,92,246,0.2);border-radius:12px;padding:14px;margin-bottom:12px">
+    <div style="font-weight:700;color:#a78bfa;font-size:13px;margin-bottom:6px">☁ Googleドライブ連携設定</div>
+    <div style="font-size:11px;color:#64748b;line-height:1.7;margin-bottom:10px">Google Apps ScriptのURLを設定すると、機種変更後もデータを復元できます。</div>
+    <span class="flabel">Google Apps Script WebアプリURL</span>
+    <input class="ifield" type="text" id="gas-url" placeholder="https://script.google.com/macros/s/.../exec" style="margin-bottom:10px">
+    <div>
+      <button onclick="saveGasUrl()" style="padding:10px 16px;border-radius:8px;border:none;cursor:pointer;background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;font-weight:700;font-size:13px;margin-right:8px">URLを保存</button>
+      <button onclick="testGas()" style="padding:10px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);cursor:pointer;background:rgba(255,255,255,0.06);color:#94a3b8;font-size:12px;font-weight:600">接続テスト</button>
+    </div>
+  </div>
+  <div class="card">
+    <div style="font-weight:700;color:#f1f5f9;margin-bottom:10px;font-size:14px">☁ クラウド操作</div>
+    <div style="margin-bottom:8px">
+      <button onclick="saveToGoogle()" style="width:49%;margin-right:2%;padding:12px 4px;border-radius:8px;border:1px solid rgba(139,92,246,0.4);cursor:pointer;background:rgba(139,92,246,0.1);color:#a78bfa;font-weight:700;font-size:13px">☁ Googleに保存</button>
+      <button onclick="loadFromGoogle()" style="width:49%;padding:12px 4px;border-radius:8px;border:1px solid rgba(34,197,94,0.4);cursor:pointer;background:rgba(34,197,94,0.1);color:#22c55e;font-weight:700;font-size:13px">☁ Google読込</button>
+    </div>
+    <div style="font-size:11px;color:#64748b;line-height:1.8">
+      <div>・機種変更後は「Google読込」でデータを復元できます</div>
+    </div>
+  </div>
+  <div class="card">
+    <div style="font-weight:700;color:#f1f5f9;margin-bottom:10px;font-size:14px">💾 バックアップ状況</div>
+    <div style="font-size:12px;line-height:2.2">
+      <div>✅ 自動保存（ローカル）：取引操作のたびに自動保存</div>
+      <div>📥 CSVバックアップ：手動でファイル保存</div>
+      <div>☁ Google：<span id="gas-status-text" style="color:#64748b">URLが未設定です</span></div>
+    </div>
+    <div style="margin-top:12px">
+      <button onclick="doCSV()" style="padding:10px 18px;border-radius:8px;border:1px solid rgba(34,197,94,0.4);cursor:pointer;background:rgba(34,197,94,0.1);color:#22c55e;font-weight:700;font-size:13px">📥 今すぐCSVバックアップ</button>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<!-- フローティング追加ボタン -->
+<button class="fab" onclick="openAdd()">＋</button>
+
+<!-- 下部ナビゲーション -->
+<div class="bottomnav">
+  <div class="bottomnav-inner">
+    <button class="bnav-btn on" id="bnav-dashboard" onclick="showTab('dashboard')">🏠<br>ホーム</button>
+    <button class="bnav-btn" id="bnav-trades" onclick="showTab('trades')">📋<br>履歴</button>
+    <button class="bnav-btn" id="bnav-holdings" onclick="showTab('holdings')">📦<br>保有</button>
+    <button class="bnav-btn" id="bnav-chart" onclick="showTab('chart')">📊<br>グラフ</button>
+    <button class="bnav-btn" id="bnav-settings" onclick="showTab('settings')">⚙️<br>設定</button>
+  </div>
+</div>
+
+<!-- モーダル -->
+<div id="modal-bg" class="hidden">
+  <div id="modal-box">
+    <div style="display:table;width:100%;margin-bottom:16px">
+      <div id="modal-title" style="display:table-cell;font-weight:700;font-size:16px;color:#f1f5f9"></div>
+      <button onclick="closeModal()" style="display:table-cell;text-align:right;background:transparent;border:none;cursor:pointer;color:#64748b;font-size:20px;vertical-align:top">✕</button>
+    </div>
+    <div style="margin-bottom:10px">
+      <div style="width:49%;margin-right:2%;display:inline-block;vertical-align:top">
+        <span class="flabel">銘柄コード</span>
+        <input class="ifield" type="text" id="f-code" inputmode="numeric" oninput="updateAmt()">
+      </div>
+      <div style="width:49%;display:inline-block;vertical-align:top">
+        <span class="flabel">銘柄名</span>
+        <input class="ifield" type="text" id="f-name">
+      </div>
+    </div>
+    <div style="margin-bottom:10px">
+      <span class="flabel">取引日</span>
+      <input class="ifield" type="date" id="f-date">
+    </div>
+    <div style="margin-bottom:10px">
+      <span class="flabel">売買</span>
+      <div>
+        <button class="tbtn tbtn-on-buy" id="tbuy" onclick="setType('buy')" style="margin-right:2%">買い</button>
+        <button class="tbtn" id="tsell" onclick="setType('sell')">売り</button>
+      </div>
+    </div>
+    <div style="margin-bottom:10px">
+      <div style="width:49%;margin-right:2%;display:inline-block;vertical-align:top">
+        <span class="flabel">単価（円）</span>
+        <input class="ifield" type="number" id="f-price" inputmode="decimal" oninput="updateAmt()">
+      </div>
+      <div style="width:49%;display:inline-block;vertical-align:top">
+        <span class="flabel">株数</span>
+        <input class="ifield" type="number" id="f-qty" inputmode="numeric" oninput="updateAmt()">
+      </div>
+    </div>
+    <div style="margin-bottom:10px">
+      <span class="flabel">口座の種類</span>
+      <div>
+        <button class="abtn abtn-nisa" id="anisa" onclick="setAcc('nisa')" style="margin-right:2%">
+          <div id="anisa-title" style="font-weight:700;font-size:12px;color:#fbbf24">🌟 NISA口座</div>
+          <div style="font-size:10px;color:#64748b;margin-top:2px">非課税・長期保有向け</div>
+        </button>
+        <button class="abtn" id="atoku" onclick="setAcc('tokutei')">
+          <div style="font-weight:700;font-size:12px;color:#64748b">🏦 特定口座</div>
+          <div style="font-size:10px;color:#64748b;margin-top:2px">源泉徴収あり</div>
+        </button>
+      </div>
+    </div>
+    <div id="amt-box" style="display:none;margin-bottom:10px;background:rgba(59,130,246,0.1);border-radius:8px;padding:10px 13px;border:1px solid rgba(59,130,246,0.2)">
+      <div style="font-size:11px;color:#94a3b8">取引金額</div>
+      <div id="amt-val" style="font-weight:700;color:#60a5fa;font-size:15px;margin-top:3px"></div>
+    </div>
+    <div>
+      <button onclick="closeModal()" style="width:49%;margin-right:2%;padding:12px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:transparent;color:#94a3b8;cursor:pointer;font-weight:600;font-size:14px">キャンセル</button>
+      <button id="btn-submit" onclick="submitForm()" style="width:49%;padding:12px;border-radius:8px;border:none;background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;cursor:pointer;font-weight:700;font-size:14px">追加する</button>
+    </div>
+  </div>
+</div>
+
+<div id="savebadge">✅ 自動保存しました</div>
+<div id="toastmsg"></div>
+
+<script>
+var SKEY = "smgr_v5";
+var GASKEY = "smgr_gas_url";
+var COLORS = ["#22c55e","#ef4444","#3b82f6","#f59e0b","#8b5cf6","#ec4899","#14b8a6","#f97316"];
+var currentType = "buy";
+var currentAcc = "nisa";
+var editingId = null;
+var filterType = "all";
+var filterAcc = "all";
+var sortK = "date";
+var sortUp = false;
+var currentTab = "dashboard";
+var gasUrl = "";
+
+function ge(id) { return document.getElementById(id); }
+
+function showToast(msg) {
+  var el = ge("toastmsg");
+  el.textContent = msg;
+  el.style.opacity = "1";
+  setTimeout(function() { el.style.opacity = "0"; }, 2200);
+}
+
+function setCloudStatus(msg) {
+  var el = ge("cloudStatus");
+  if (el) el.textContent = msg;
+}
+
+function n(v) { return Number(v || 0).toLocaleString(); }
+function zp(v) { return v < 10 ? "0" + v : String(v); }
+
+function holdStr(d) {
+  if (d >= 365) return Math.floor(d/365) + "年" + Math.floor((d%365)/30) + "ヶ月";
+  if (d >= 30) return Math.floor(d/30) + "ヶ月" + (d%30) + "日";
+  return d + "日";
+}
+
+function sanitizeTrades(arr) {
+  var r = [], i, t;
+  if (!arr || typeof arr.length === "undefined") return r;
+  for (i = 0; i < arr.length; i++) {
+    t = arr[i];
+    if (!t) continue;
+    var item = {
+      id: Number(t.id) || (Date.now() + i),
+      code: String(t.code || "").trim(),
+      name: String(t.name || "").trim(),
+      type: t.type === "sell" ? "sell" : "buy",
+      date: String(t.date || ""),
+      price: Number(t.price) || 0,
+      qty: Number(t.qty) || 0,
+      account: t.account === "tokutei" ? "tokutei" : "nisa"
+    };
+    if (item.code && item.name && item.date && item.price > 0 && item.qty > 0) {
+      r.push(item);
+    }
+  }
+  return r;
+}
+
+function loadTrades() {
+  var s, parsed;
+  try {
+    s = localStorage.getItem(SKEY);
+    if (s) { parsed = JSON.parse(s); return sanitizeTrades(parsed); }
+  } catch(e) {}
+  return sanitizeTrades([
+    {id:1,code:"7203",name:"トヨタ自動車",type:"buy",date:"2024-10-15",price:2800,qty:100,account:"nisa"},
+    {id:2,code:"7203",name:"トヨタ自動車",type:"sell",date:"2025-02-20",price:3050,qty:100,account:"nisa"},
+    {id:3,code:"6758",name:"ソニーグループ",type:"buy",date:"2025-01-10",price:13200,qty:50,account:"tokutei"},
+    {id:4,code:"9984",name:"ソフトバンクG",type:"buy",date:"2025-03-01",price:9400,qty:30,account:"tokutei"}
+  ]);
+}
+
+var trades = loadTrades();
+
+function saveTrades() {
+  var el;
+  try {
+    localStorage.setItem(SKEY, JSON.stringify(trades));
+    el = ge("savebadge");
+    if (el) { el.style.opacity = "1"; setTimeout(function() { el.style.opacity = "0"; }, 2000); }
+    setCloudStatus("保存済");
+  } catch(e) { showToast("⚠ 保存に失敗しました"); }
+}
+
+function loadGasUrl() {
+  try { gasUrl = localStorage.getItem(GASKEY) || ""; } catch(e) { gasUrl = ""; }
+  var el = ge("gas-url");
+  if (el) el.value = gasUrl;
+  updateGasStatusRow();
+}
+
+function saveGasUrl() {
+  var v = ge("gas-url").value.trim();
+  gasUrl = v;
+  try { localStorage.setItem(GASKEY, v); } catch(e) {}
+  showToast(v ? "☁ URLを保存しました" : "URLをクリアしました");
+  updateGasStatusRow();
+}
+
+function updateGasStatusRow() {
+  var el = ge("gas-status-text");
+  if (!el) return;
+  if (gasUrl) { el.style.color = "#22c55e"; el.textContent = "設定済み"; }
+  else { el.style.color = "#64748b"; el.textContent = "URLが未設定です"; }
+}
+
+function ab(account) { return account === "nisa" ? "<span class='bn'>NISA</span>" : "<span class='bt'>特定</span>"; }
+function tb2(type) { return type === "buy" ? "<span class='bb'>買い</span>" : "<span class='bs'>売り</span>"; }
+function si(k) { if (sortK !== k) return "<span style='opacity:0.3'>&#9660;</span>"; return sortUp ? "&#9650;" : "&#9660;"; }
+
+function calcH() {
+  var map = {}, r = [], i, t, avg, x, k;
+  var sorted = trades.slice().sort(function(a,b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; });
+  for (i = 0; i < sorted.length; i++) {
+    t = sorted[i];
+    var key = t.code + "::" + t.account;
+    if (t.type === "buy") {
+      if (!map[key]) map[key] = {code:t.code, name:t.name, qty:0, cost:0, account:t.account};
+      map[key].qty += t.qty;
+      map[key].cost += t.price * t.qty;
+      map[key].name = t.name;
+    } else {
+      if (map[key] && map[key].qty > 0) {
+        avg = map[key].cost / map[key].qty;
+        var sq = t.qty < map[key].qty ? t.qty : map[key].qty;
+        map[key].qty -= sq;
+        map[key].cost -= avg * sq;
+      }
+    }
+  }
+  for (k in map) {
+    x = map[k];
+    if (x.qty > 0) { x.avg = Math.round(x.cost / x.qty); r.push(x); }
+  }
+  return r;
+}
+
+function calcR() {
+  var bm = {}, res = [], i, t, avg, pnl, days, sq, k;
+  var sorted = trades.slice().sort(function(a,b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; });
+  for (i = 0; i < sorted.length; i++) {
+    t = sorted[i];
+    var key = t.code + "::" + t.account;
+    if (!bm[key]) bm[key] = {qty:0, cost:0, account:t.account, buyDate:t.date, name:t.name, code:t.code};
+    if (t.type === "buy") {
+      if (bm[key].qty === 0) bm[key].buyDate = t.date;
+      bm[key].qty += t.qty;
+      bm[key].cost += t.price * t.qty;
+      bm[key].name = t.name;
+    } else if (bm[key].qty > 0) {
+      avg = bm[key].cost / bm[key].qty;
+      sq = t.qty < bm[key].qty ? t.qty : bm[key].qty;
+      pnl = Math.round(t.price * sq - avg * sq);
+      days = Math.round((new Date(t.date) - new Date(bm[key].buyDate)) / 86400000);
+      if (days < 0) days = 0;
+      res.push({code:t.code, name:t.name, date:t.date, price:t.price, qty:sq, pnl:pnl, account:bm[key].account, holdDays:days});
+      bm[key].qty -= sq;
+      bm[key].cost -= avg * sq;
+      if (bm[key].qty === 0) bm[key].buyDate = t.date;
+    }
+  }
+  return res;
+}
+
+function getAvailableQty(code, account, ignoreId) {
+  var qty = 0, i, t;
+  var sorted = trades.slice().sort(function(a,b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; });
+  for (i = 0; i < sorted.length; i++) {
+    t = sorted[i];
+    if (ignoreId && t.id === ignoreId) continue;
+    if (t.code !== code || t.account !== account) continue;
+    qty += (t.type === "buy" ? t.qty : -t.qty);
+  }
+  return qty < 0 ? 0 : qty;
+}
+
+function getFiltered() {
+  var kw = ge("kw") ? ge("kw").value.toLowerCase().trim() : "";
+  var df = ge("df") ? ge("df").value : "";
+  var dt = ge("dt") ? ge("dt").value : "";
+  var list = trades.slice().sort(function(a,b) {
+    var va = a[sortK], vb = b[sortK];
+    if (va < vb) return sortUp ? -1 : 1;
+    if (va > vb) return sortUp ? 1 : -1;
+    return 0;
+  });
+  var r = [], i, t;
+  for (i = 0; i < list.length; i++) {
+    t = list[i];
+    if (kw && t.code.toLowerCase().indexOf(kw) < 0 && t.name.toLowerCase().indexOf(kw) < 0) continue;
+    if (df && t.date < df) continue;
+    if (dt && t.date > dt) continue;
+    if (filterType !== "all" && t.type !== filterType) continue;
+    if (filterAcc !== "all" && t.account !== filterAcc) continue;
+    r.push(t);
+  }
+  return r;
+}
+
+var TAB_ON = "padding:8px 13px;border-radius:9px;border:none;cursor:pointer;font-size:12px;font-weight:600;background:#3b82f6;color:#fff;margin-right:5px";
+var TAB_OFF = "padding:8px 13px;border-radius:9px;border:none;cursor:pointer;font-size:12px;font-weight:600;background:rgba(255,255,255,0.07);color:#94a3b8;margin-right:5px";
+var TAB_OFF_LAST = "padding:8px 13px;border-radius:9px;border:none;cursor:pointer;font-size:12px;font-weight:600;background:rgba(255,255,255,0.07);color:#94a3b8";
+
+function updateBottomNav(name) {
+  var keys = ["dashboard","trades","holdings","chart","settings"];
+  var i, el;
+  for (i = 0; i < keys.length; i++) {
+    el = ge("bnav-" + keys[i]);
+    if (el) el.className = "bnav-btn" + (keys[i] === name ? " on" : "");
+  }
+}
+
+function showTab(name) {
+  var pages = ["dashboard","trades","holdings","chart","settings"];
+  var i, p, tb;
+  currentTab = name;
+  for (i = 0; i < pages.length; i++) {
+    p = ge("page-" + pages[i]);
+    tb = ge("tab-" + pages[i]);
+    if (p) { if (pages[i] === name) p.classList.remove("hidden"); else p.classList.add("hidden"); }
+    if (tb) {
+      var isLast = (pages[i] === "settings");
+      tb.setAttribute("style", pages[i] === name ? TAB_ON : (isLast ? TAB_OFF_LAST : TAB_OFF));
+    }
+  }
+  updateBottomNav(name);
+  if (name === "dashboard") renderDashboard();
+  if (name === "trades") renderTrades();
+  if (name === "holdings") renderHoldings();
+  if (name === "chart") renderChart();
+  if (name === "settings") loadGasUrl();
+}
+
+function renderDashboard() {
+  var h = calcH(), r = calcR(), i, t, tPnL = 0, tInv = 0;
+  for (i = 0; i < r.length; i++) tPnL += r[i].pnl;
+  for (i = 0; i < h.length; i++) tInv += h[i].cost;
+  var pc = tPnL >= 0 ? "#22c55e" : "#ef4444";
+  ge("sum0").innerHTML = "<div style='font-size:11px;color:#94a3b8;margin-bottom:5px'>損益</div><div style='font-size:20px;font-weight:700;color:"+pc+"'>"+(tPnL>=0?"+":"")+n(tPnL)+"円</div>";
+  ge("sum1").innerHTML = "<div style='font-size:11px;color:#94a3b8;margin-bottom:5px'>投資総額</div><div style='font-size:20px;font-weight:700;color:#60a5fa'>"+n(Math.round(tInv))+"円</div>";
+  ge("sum2").innerHTML = "<div style='font-size:11px;color:#94a3b8;margin-bottom:5px'>保有銘柄数</div><div style='font-size:20px;font-weight:700;color:#f59e0b'>"+h.length+"銘柄</div>";
+  ge("sum3").innerHTML = "<div style='font-size:11px;color:#94a3b8;margin-bottom:5px'>取引回数</div><div style='font-size:20px;font-weight:700;color:#8b5cf6'>"+trades.length+"回</div>";
+  var rec = trades.slice().sort(function(a,b) { return a.date < b.date ? 1 : a.date > b.date ? -1 : 0; });
+  if (rec.length > 5) rec = rec.slice(0,5);
+  var html = "<thead><tr><th>日付</th><th>コード</th><th>銘柄名</th><th>売買</th><th>株数</th><th>単価</th><th>口座</th></tr></thead><tbody>";
+  for (i = 0; i < rec.length; i++) {
+    t = rec[i];
+    html += "<tr><td style='color:#94a3b8'>"+t.date+"</td><td style='color:#60a5fa;font-weight:700'>"+t.code+"</td><td>"+t.name+"</td><td>"+tb2(t.type)+"</td><td>"+n(t.qty)+"株</td><td>"+n(t.price)+"円</td><td>"+ab(t.account)+"</td></tr>";
+  }
+  ge("recent-table").innerHTML = html + "</tbody>";
+}
+
+function renderTrades() {
+  var filt = getFiltered(), i, t;
+  var fc = ge("fcnt");
+  if (fc) fc.textContent = filt.length + "件 / 全" + trades.length + "件";
+  var html = "<thead><tr>" +
+    "<th onclick='doSort(\"date\")'>日付 "+si("date")+"</th>" +
+    "<th onclick='doSort(\"code\")'>コード "+si("code")+"</th>" +
+    "<th onclick='doSort(\"name\")'>銘柄名 "+si("name")+"</th>" +
+    "<th onclick='doSort(\"type\")'>売買 "+si("type")+"</th>" +
+    "<th onclick='doSort(\"qty\")'>株数 "+si("qty")+"</th>" +
+    "<th onclick='doSort(\"price\")'>単価 "+si("price")+"</th>" +
+    "<th>口座</th><th>操作</th></tr></thead><tbody>";
+  if (!filt.length) {
+    html += "<tr><td colspan='8' style='padding:24px;text-align:center;color:#64748b'>該当する取引が見つかりません</td></tr>";
+  } else {
+    for (i = 0; i < filt.length; i++) {
+      t = filt[i];
+      html += "<tr><td style='color:#94a3b8'>"+t.date+"</td><td style='color:#60a5fa;font-weight:700'>"+t.code+"</td><td>"+t.name+"</td><td>"+tb2(t.type)+"</td><td>"+n(t.qty)+"</td><td>"+n(t.price)+"円</td><td>"+ab(t.account)+"</td><td><button class='btn-edit' onclick='openEdit("+t.id+")'>修正</button> <button class='btn-del' onclick='doDelete("+t.id+")'>削除</button></td></tr>";
+    }
+  }
+  ge("trades-table").innerHTML = html + "</tbody>";
+}
+
+function renderHoldings() {
+  var h = calcH(), r = calcR(), i, x, html = "", tPnL = 0;
+  for (i = 0; i < r.length; i++) tPnL += r[i].pnl;
+  if (!h.length) {
+    ge("hold-grid").innerHTML = "<div class='card' style='text-align:center;color:#64748b'>現在保有している株はありません</div>";
+  } else {
+    for (i = 0; i < h.length; i++) {
+      x = h[i];
+      html += "<div class='card'>" +
+        "<div style='margin-bottom:10px'><span style='color:#60a5fa;font-weight:700;font-size:14px'>"+x.code+"</span><span style='float:right'>"+ab(x.account)+"</span></div>" +
+        "<div style='font-weight:600;font-size:13px;margin-bottom:10px'>"+x.name+"</div>" +
+        "<div style='margin-bottom:6px'>" +
+          "<div style='width:49%;margin-right:2%;display:inline-block;vertical-align:top;background:rgba(255,255,255,0.04);border-radius:7px;padding:8px 10px'><div style='font-size:10px;color:#64748b;margin-bottom:2px'>保有株数</div><div style='font-weight:700;font-size:13px'>"+n(x.qty)+"株</div></div>" +
+          "<div style='width:49%;display:inline-block;vertical-align:top;background:rgba(255,255,255,0.04);border-radius:7px;padding:8px 10px'><div style='font-size:10px;color:#64748b;margin-bottom:2px'>平均取得単価</div><div style='font-weight:700;font-size:13px'>"+n(x.avg)+"円</div></div>" +
+        "</div>" +
+        "<div style='background:rgba(255,255,255,0.04);border-radius:7px;padding:8px 10px'><div style='font-size:10px;color:#64748b;margin-bottom:2px'>投賄総額</div><div style='font-weight:700;font-size:13px;color:#f59e0b'>"+n(Math.round(x.cost))+"円</div></div>" +
+      "</div>";
+    }
+    ge("hold-grid").innerHTML = html;
+  }
+  var rw = ge("realized-wrap");
+  if (!r.length) { rw.innerHTML = ""; return; }
+  var pnlColor = tPnL >= 0 ? "#22c55e" : "#ef4444";
+  html = "<div class='card'><div style='font-weight:700;color:#f1f5f9;margin-bottom:12px'>✅ 実現損益（売却済み）</div><div class='tscroll'><table><thead><tr><th>日付</th><th>コード</th><th>銘柄名</th><th>口座</th><th>保有期間</th><th>株数</th><th>売却単価</th><th>損益</th></tr></thead><tbody>";
+  for (i = 0; i < r.length; i++) {
+    x = r[i];
+    var pc = x.pnl >= 0 ? "#22c55e" : "#ef4444";
+    html += "<tr><td style='color:#94a3b8'>"+x.date+"</td><td style='color:#60a5fa;font-weight:700'>"+x.code+"</td><td>"+x.name+"</td><td>"+ab(x.account)+"</td><td><span class='bp'>"+holdStr(x.holdDays)+"</span></td><td>"+n(x.qty)+"株</td><td>"+n(x.price)+"円</td><td style='font-weight:700;color:"+pc+"'>"+(x.pnl>=0?"+":"")+n(x.pnl)+"円</td></tr>";
+  }
+  html += "<tr style='border-top:2px solid rgba(255,255,255,0.15)'><td colspan='7' style='padding:8px;font-weight:700;text-align:right'>合計</td><td style='padding:8px;font-weight:700;font-size:15px;color:"+pnlColor+"'>"+(tPnL>=0?"+":"")+n(tPnL)+"円</td></tr></tbody></table></div></div>";
+  rw.innerHTML = html;
+}
+
+function renderChart() {
+  var h = calcH(), r = calcR(), i, d, pct, c, bv, ratio, ang, x1, y1, x2, y2, lg, paths, legendHTML;
+  var pmap = {}, k, pd = [], maxA, total, sa, R, cx, cy;
+  for (i = 0; i < r.length; i++) {
+    var pkey = r[i].name + "(" + (r[i].account === "nisa" ? "NISA" : "特定") + ")";
+    pmap[pkey] = (pmap[pkey] || 0) + r[i].pnl;
+  }
+  for (k in pmap) pd.push({name:k, pnl:pmap[k]});
+  var ba = ge("bar-area");
+  if (!pd.length) {
+    ba.innerHTML = "<div style='color:#64748b;text-align:center;padding:32px'>売却データがありません</div>";
+  } else {
+    maxA = 1;
+    for (i = 0; i < pd.length; i++) if (Math.abs(pd[i].pnl) > maxA) maxA = Math.abs(pd[i].pnl);
+    var bhtml = "<div style='display:table;width:100%;height:160px;vertical-align:bottom'><div style='display:table-row'>";
+    for (i = 0; i < pd.length; i++) {
+      d = pd[i]; pct = Math.round(Math.abs(d.pnl)/maxA*130); c = d.pnl>=0?"#22c55e":"#ef4444";
+      bv = (d.pnl>=0?"+":"") + n(d.pnl);
+      bhtml += "<div style='display:table-cell;text-align:center;vertical-align:bottom;padding:0 4px'><div style='font-size:9px;font-weight:700;color:"+c+";margin-bottom:3px'>"+bv+"</div><div style='width:100%;height:"+pct+"px;background:"+c+";border-radius:4px 4px 0 0;display:block'></div><div style='font-size:9px;color:#94a3b8;margin-top:3px'>"+d.name+"</div></div>";
+    }
+    ba.innerHTML = bhtml + "</div></div>";
+  }
+  total = 0;
+  for (i = 0; i < h.length; i++) total += h[i].cost;
+  var pa = ge("pie-area");
+  if (!h.length || !total) {
+    pa.innerHTML = "<div style='color:#64748b;text-align:center;padding:32px'>保有株がありません</div>";
+  } else {
+    sa = -Math.PI/2; R = 80; cx = 100; cy = 100; paths = ""; legendHTML = "<div style='text-align:center;margin-top:10px'>";
+    for (i = 0; i < h.length; i++) {
+      ratio = h[i].cost/total; ang = ratio*2*Math.PI;
+      x1 = cx+R*Math.cos(sa); y1 = cy+R*Math.sin(sa); sa += ang;
+      x2 = cx+R*Math.cos(sa); y2 = cy+R*Math.sin(sa);
+      lg = ang > Math.PI ? 1 : 0;
+      paths += "<path d='M"+cx+","+cy+" L"+x1.toFixed(1)+","+y1.toFixed(1)+" A"+R+","+R+" 0 "+lg+",1 "+x2.toFixed(1)+","+y2.toFixed(1)+" Z' fill='"+COLORS[i%COLORS.length]+"' stroke='#1e293b' stroke-width='2'/>";
+      legendHTML += "<span style='display:inline-block;margin:3px 6px;font-size:11px'><span style='display:inline-block;width:8px;height:8px;border-radius:50%;background:"+COLORS[i%COLORS.length]+";margin-right:4px;vertical-align:middle'></span>"+h[i].name+"("+(h[i].account==="nisa"?"NISA":"特定")+") "+Math.round(ratio*100)+"%</span>";
+    }
+    pa.innerHTML = "<div style='text-align:center'><svg width='200' height='200' viewBox='0 0 200 200'>"+paths+"</svg></div>" + legendHTML + "</div>";
+  }
+}
+
+function openAdd() {
+  editingId = null;
+  ge("modal-title").textContent = "＋ 取引を追加";
+  ge("f-code").value = ""; ge("f-name").value = ""; ge("f-date").value = "";
+  ge("f-price").value = ""; ge("f-qty").value = "";
+  setType("buy"); setAcc("nisa");
+  ge("btn-submit").textContent = "追加する";
+  ge("btn-submit").style.background = "linear-gradient(135deg,#3b82f6,#2563eb)";
+  ge("amt-box").style.display = "none";
+  ge("modal-bg").classList.remove("hidden");
+}
+
+function openEdit(id) {
+  var t = null, i;
+  for (i = 0; i < trades.length; i++) { if (trades[i].id === id) { t = trades[i]; break; } }
+  if (!t) return;
+  editingId = id;
+  ge("modal-title").textContent = "✏️ 取引を修正";
+  ge("f-code").value = t.code; ge("f-name").value = t.name; ge("f-date").value = t.date;
+  ge("f-price").value = String(t.price); ge("f-qty").value = String(t.qty);
+  setType(t.type); setAcc(t.account);
+  ge("btn-submit").textContent = "修正を保存";
+  ge("btn-submit").style.background = "linear-gradient(135deg,#f59e0b,#d97706)";
+  updateAmt();
+  ge("modal-bg").classList.remove("hidden");
+}
+
+function closeModal() { ge("modal-bg").classList.add("hidden"); editingId = null; }
+
+function setType(v) {
+  currentType = v;
+  ge("tbuy").className = "tbtn" + (v === "buy" ? " tbtn-on-buy" : "");
+  ge("tsell").className = "tbtn" + (v === "sell" ? " tbtn-on-sell" : "");
+}
+
+function setAcc(v) {
+  currentAcc = v;
+  var anisa = ge("anisa"), atoku = ge("atoku"), anisaTitle = ge("anisa-title");
+  if (anisa) anisa.className = "abtn" + (v === "nisa" ? " abtn-nisa" : "");
+  if (atoku) atoku.className = "abtn" + (v === "tokutei" ? " abtn-toku" : "");
+  if (anisaTitle) anisaTitle.style.color = v === "nisa" ? "#fbbf24" : "#64748b";
+}
+
+function updateAmt() {
+  var p = Number(ge("f-price").value), q = Number(ge("f-qty").value);
+  if (p && q) { ge("amt-val").textContent = n(p*q) + "円"; ge("amt-box").style.display = "block"; }
+  else { ge("amt-box").style.display = "none"; }
+}
+
+function submitForm() {
+  var code = ge("f-code").value.trim();
+  var name = ge("f-name").value.trim();
+  var date = ge("f-date").value;
+  var price = Number(ge("f-price").value);
+  var qty = Number(ge("f-qty").value);
+  var i;
+  if (!code || !name || !date || !price || !qty) { alert("すべての項目を入力してください"); return; }
+  if (qty <= 0 || price <= 0) { alert("単価と株数は1以上で入力してください"); return; }
+  if (currentType === "sell") {
+    var available = getAvailableQty(code, currentAcc, editingId);
+    if (qty > available) {
+      alert("売却可能数を超えています。現在売れる株数は " + available + " 株です。");
+      return;
+    }
+  }
+  if (editingId) {
+    for (i = 0; i < trades.length; i++) {
+      if (trades[i].id === editingId) {
+        trades[i] = {id:editingId, code:code, name:name, type:currentType, date:date, price:price, qty:qty, account:currentAcc};
+        break;
+      }
+    }
+  } else {
+    trades.push({id:Date.now(), code:code, name:name, type:currentType, date:date, price:price, qty:qty, account:currentAcc});
+  }
+  trades = sanitizeTrades(trades);
+  saveTrades(); closeModal(); showTab(currentTab);
+}
+
+function doDelete(id) {
+  var newArr = [], i;
+  if (!confirm("この取引を削除しますか？")) return;
+  for (i = 0; i < trades.length; i++) { if (trades[i].id !== id) newArr.push(trades[i]); }
+  trades = newArr;
+  saveTrades(); showTab(currentTab);
+}
+
+function setFType(v) {
+  filterType = v;
+  ge("ft-all").className = "fbtn" + (v === "all" ? " fbtn-blue" : "");
+  ge("ft-buy").className = "fbtn" + (v === "buy" ? " fbtn-blue" : "");
+  ge("ft-sell").className = "fbtn" + (v === "sell" ? " fbtn-blue" : "");
+  renderTrades();
+}
+
+function setFAcc(v) {
+  filterAcc = v;
+  ge("fa-all").className = "fbtn" + (v === "all" ? " fbtn-gold" : "");
+  ge("fa-nisa").className = "fbtn" + (v === "nisa" ? " fbtn-gold" : "");
+  ge("fa-toku").className = "fbtn" + (v === "tokutei" ? " fbtn-gold" : "");
+  renderTrades();
+}
+
+function resetFilter() {
+  filterType = "all"; filterAcc = "all";
+  var kw = ge("kw"); if (kw) kw.value = "";
+  var df = ge("df"); if (df) df.value = "";
+  var dt = ge("dt"); if (dt) dt.value = "";
+  setFType("all"); setFAcc("all");
+}
+
+function doSort(k) {
+  if (sortK === k) sortUp = !sortUp; else { sortK = k; sortUp = true; }
+  renderTrades();
+}
+
+function doCSV() {
+  var rows = [], i, t, d, ds, blob, url, link;
+  rows.push("取引日,銘柄コード,銘柄名,売買,株数,単価,口座");
+  for (i = 0; i < trades.length; i++) {
+    t = trades[i];
+    rows.push(t.date+","+t.code+",\""+t.name+"\","+(t.type==="buy"?"買い":"売り")+","+t.qty+","+t.price+","+(t.account==="nisa"?"NISA口座":"特定口座"));
+  }
+  blob = new Blob(["﻿"+rows.join("\n")], {type:"text/csv;charset=utf-8;"});
+  url = URL.createObjectURL(blob);
+  link = document.createElement("a");
+  d = new Date();
+  ds = d.getFullYear()+"-"+zp(d.getMonth()+1)+"-"+zp(d.getDate());
+  link.href = url; link.download = "売買記録_"+ds+".csv";
+  document.body.appendChild(link); link.click(); document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+  showToast("\u{1F4E5} CSVを保存しました");
+}
+
+function testGas() {
+  if (!gasUrl) { showToast("⚠ GAS URLを設定してください"); return; }
+  showToast("► 接続テスト中...");
+  var xhr = new XMLHttpRequest();
+  xhr.open("GET", gasUrl + "?action=ping&_=" + Date.now(), true);
+  xhr.onload = function() {
+    var ok = false;
+    try { var d = JSON.parse(xhr.responseText); if (d.ok) ok = true; } catch(e) { ok = false; }
+    if (ok) { showToast("☁ 接続成功"); setCloudStatus("Google OK"); }
+    else { showToast("⚠ 接続失敗"); }
+  };
+  xhr.onerror = function() { showToast("⚠ 接続失敗"); };
+  xhr.send();
+}
+
+function saveToGoogle() {
+  if (!gasUrl) { showToast("⚠ 設定タブでGAS URLを設定してください"); return; }
+  showToast("► Googleに保存中...");
+  var xhr = new XMLHttpRequest();
+  xhr.open("POST", gasUrl, true);
+  xhr.setRequestHeader("Content-Type", "text/plain;charset=utf-8");
+  xhr.onload = function() {
+    var ok = false;
+    try { var d = JSON.parse(xhr.responseText); if (d.ok) ok = true; } catch(e) { ok = false; }
+    if (ok) { showToast("☁ Googleに保存しました"); setCloudStatus("Google保存済"); }
+    else { showToast("⚠ Google保存失敗"); }
+  };
+  xhr.onerror = function() { showToast("⚠ Google保存失敗"); };
+  xhr.send(JSON.stringify({action:"saveTradesApp", trades:trades}));
+}
+
+function loadFromGoogle() {
+  if (!gasUrl) { showToast("⚠ 設定タブでGAS URLを設定してください"); return; }
+  showToast("► Googleから読み込み中...");
+  var xhr = new XMLHttpRequest();
+  xhr.open("GET", gasUrl + "?action=loadTradesApp&_=" + Date.now(), true);
+  xhr.onload = function() {
+    var ok = false, data = null;
+    try { data = JSON.parse(xhr.responseText); if (data.ok && data.trades) ok = true; } catch(e) { ok = false; }
+    if (ok) {
+      trades = sanitizeTrades(data.trades); saveTrades();
+      showTab(currentTab);
+      showToast("☁ Googleから読み込みました"); setCloudStatus("Google読込済");
+    } else { showToast("⚠ Google読込失敗"); }
+  };
+  xhr.onerror = function() { showToast("⚠ Google読込失敗"); };
+  xhr.send();
+}
+
+loadGasUrl();
+renderDashboard();
+updateBottomNav("dashboard");
+</script>
+</body>
+</html>
